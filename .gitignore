@@ -12,7 +12,8 @@ Output/
 # Pycharm temporary files
 .idea/
 
-.HomeKitStore
+# HomeKitADK
+.HomeKitStore*
 
 # Open source export
 export/
@@ -20,3 +21,11 @@ export/
 # Documentation related
 Documentation/_api_docs/
 Documentation/api_docs/
+
+# vscode
+.vscode/
+
+#Eclipse
+.settings/
+.cproject
+.project
