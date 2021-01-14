@@ -430,7 +430,7 @@ const HAPTLV8Characteristic setupEndpointsCharacteristic = {
                     .hidden = false,
                     .requiresTimedWrite = false,
                     .supportsAuthorizationData = false,
-                    .ip = { .controlPoint = true, .supportsWriteResponse = false } },
+                    .ip = { .controlPoint = false, .supportsWriteResponse = false } },
     .callbacks = { .handleRead = HandleSetupEndpointsRead, .handleWrite = HandleSetupEndpointsWrite }
 };
 
@@ -442,7 +442,7 @@ const HAPService rtpStreamService = { .iid = kIID_RTPStream,
                                       .debugDescription = kHAPServiceDebugDescription_CameraRTPStreamManagement,
                                       .name = NULL,
                                       .properties = { .primaryService = true, .hidden = false },
-                                      .linkedServices = (uint16_t const[]) { kIID_Microphone, kIID_MotionSensor, 0 },
+                                      .linkedServices = NULL,
                                       .characteristics = (const HAPCharacteristic* const[]) {
                                               &selectedRTPConfigurationCharacteristic,
                                               &streamingStatusCharacteristic,
@@ -473,7 +473,7 @@ const HAPService microphoneService = {
     .debugDescription = kHAPServiceDebugDescription_Microphone,
     .name = NULL, // Optional
     .properties = { .primaryService = false, .hidden = false },
-    .linkedServices = (uint16_t const[]) { kIID_RTPStream, 0 },
+    .linkedServices = NULL,
     .characteristics = (const HAPCharacteristic* const[]) { &microphoneMuteCharacteristic, NULL }
 };
 
@@ -498,6 +498,6 @@ const HAPService motionDetectService = {
     .debugDescription = kHAPServiceDebugDescription_MotionSensor,
     .name = NULL, // Optional
     .properties = { .primaryService = false, .hidden = false },
-    .linkedServices = (uint16_t const[]) { kIID_RTPStream, 0 },
+    .linkedServices = NULL,
     .characteristics = (const HAPCharacteristic* const[]) { &motionDetectedCharacteristic, NULL }
 };
