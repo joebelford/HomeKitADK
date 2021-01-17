@@ -26,7 +26,7 @@ supportedAudioConfigStruct supportedAudioConfigValue =
         {
             .audioChannels = 1,  // 1 channel
             .bitRate = 0,        // Variable
-            .sampleRate = 0      // 8kHz
+            .sampleRate = 1      // 16kHz 8 not supported on MBP
         }
     },
     .comfortNoiseSupport = false
@@ -347,6 +347,28 @@ HAPError VerifyCodecConfigTLV(void* actualBytes, size_t numActualBytes) {
         HAPLogDebug(&kHAPLog_Default, "tlv type: %d\ntlv size: %lu\n", paramsTLV.type, paramsTLV.value.numBytes);
         HAPLogDebug(
                 &kHAPLog_Default, "tlv type: %d\ntlv size: %lu\n", attributesTLV.type, attributesTLV.value.numBytes);
+
+        uint8_t attributesBuffer[attributesTLV.value.numBytes];
+        HAPRawBufferCopyBytes(attributesBuffer, &attributesTLV.value.bytes[0], attributesTLV.value.numBytes);
+        HAPTLVReaderRef attributesReader;
+        HAPTLVReaderCreateWithOptions(
+                &attributesReader,
+                &(const HAPTLVReaderOptions) { .bytes = attributesBuffer,
+                                               .maxBytes = attributesTLV.value.numBytes,
+                                               .numBytes = attributesTLV.value.numBytes });
+        HAPTLV widthTLV, heightTLV, framerateTLV;
+        widthTLV.type = 1;
+        heightTLV.type = 2;
+        framerateTLV.type = 3;
+        err = HAPTLVReaderGetAll(&attributesReader, (HAPTLV* const[]) { &widthTLV, &heightTLV, &framerateTLV, NULL });
+        HAPAssert(!err);
+        //((const uint8_t*) tlvs->stateTLV->value.bytes)[0]
+        HAPLogDebug(
+                &kHAPLog_Default,
+                "width: %u\nheight: %u\n:framerate: %d\n",
+                ((const uint16_t*) widthTLV.value.bytes)[0],
+                ((const uint16_t*) heightTLV.value.bytes)[0],
+                ((const uint8_t*) framerateTLV.value.bytes)[0]);
     }
     return err;
 };
@@ -395,14 +417,51 @@ HAPError HandleSupportedVideoRead(
     HAPLogInfo(&kHAPLog_Default, "%s", __func__);
     HAPError err;
 
-    err = HAPTLVWriterEncode(responseWriter, &supportedVideoConfigFormat, &supportedVideoConfigValue);
-    HAPAssert(!err);
-    void* actualBytes;
-    size_t numActualBytes;
-    HAPTLVWriterGetBuffer(responseWriter, &actualBytes, &numActualBytes);
-    err = VerifyCodecConfigTLV(actualBytes, numActualBytes);
+    const HAPTLV videoConfig = { .type = 0x01,
+                                 .value = { .bytes =
+                                                    (uint8_t[]) {
+                                                            0x01, 0x01, 0x00,       // CodecType
+                                                            0x02, 0x18,             // CodecParams
+                                                            0x01, 0x01, 0x00,       // ProfileId - Constrained
+                                                            0x01, 0x01, 0x01,       // ProfileId - Main
+                                                            0x01, 0x01, 0x02,       // ProfileId - High
+                                                            0x02, 0x01, 0x00,       // Level 3.1
+                                                            0x02, 0x01, 0x01,       // Level 3.2
+                                                            0x02, 0x01, 0x02,       // Level 4
+                                                            0x03, 0x01, 0x00,       // PacketMode
+                                                            0x04, 0x01, 0x00,       // CVO Enabled false
+                                                            0x03, 0x0B,             // Attributes
+                                                            0x01, 0x02, 0x80, 0x07, // Width 1920 - bytes flipped
+                                                            0x02, 0x02, 0x38, 0x04, // Height 1080 - bytes flipped
+                                                            0x03, 0x01, 0x1E,       // Framerate
+                                                            0x03, 0x0B,             // Attributes
+                                                            0x01, 0x02, 0x00, 0x05, // Width 1280 - bytes flipped
+                                                            0x02, 0x02, 0xD0, 0x02, // Height 720 - bytes flipped
+                                                            0x03, 0x01, 0x1E,       // Framerate
+                                                            0x03, 0x0B,             // Attributes
+                                                            0x01, 0x02, 0x40, 0x01, // Width 320 - bytes flipped
+                                                            0x02, 0x02, 0xF0, 0x00, // Height 240 - bytes flipped
+                                                            0x03, 0x01, 0x0F        // Framerate
+                                                    },
+                                            .numBytes = 0x44 } };
 
-    return kHAPError_None;
+    err = HAPTLVWriterAppend(responseWriter, &videoConfig);
+    // HAPAssert(!err);
+    return err;
+
+    /*     void* actualBytes;
+        size_t numActualBytes;
+        HAPTLVWriterGetBuffer(responseWriter, &actualBytes, &numActualBytes);
+        err = VerifyCodecConfigTLV(actualBytes, numActualBytes); */
+
+    /*         err = HAPTLVWriterEncode(responseWriter, &supportedVideoConfigFormat, &supportedVideoConfigValue);
+            HAPAssert(!err);
+            void* actualBytes;
+            size_t numActualBytes;
+            HAPTLVWriterGetBuffer(responseWriter, &actualBytes, &numActualBytes);
+            err = VerifyCodecConfigTLV(actualBytes, numActualBytes); 
+
+    return kHAPError_None;*/
 }
 
 HAP_RESULT_USE_CHECK
